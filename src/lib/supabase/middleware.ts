@@ -32,18 +32,26 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user = null;
+  try {
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+  } catch {
+    // If getUser fails, treat as unauthenticated
+  }
 
+  const pathname = request.nextUrl.pathname;
   const isAuthPage =
-    request.nextUrl.pathname.startsWith("/auth/login") ||
-    request.nextUrl.pathname.startsWith("/auth/register");
+    pathname.startsWith("/auth/login") ||
+    pathname.startsWith("/auth/register");
 
-  if (!user && !isAuthPage && request.nextUrl.pathname.startsWith("/dashboard") ||
-      !user && !isAuthPage && request.nextUrl.pathname.startsWith("/projects") ||
-      !user && !isAuthPage && request.nextUrl.pathname.startsWith("/settings") ||
-      !user && !isAuthPage && request.nextUrl.pathname.startsWith("/billing")) {
+  const isProtectedRoute =
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/projects") ||
+    pathname.startsWith("/settings") ||
+    pathname.startsWith("/billing");
+
+  if (!user && !isAuthPage && isProtectedRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
     return NextResponse.redirect(url);
