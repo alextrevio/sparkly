@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useState } from "react";
+import { MOCK_ORG } from "@/lib/auth/mock";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,32 +9,8 @@ import { PLANS } from "@/lib/stripe/plans";
 import { Check, Zap } from "lucide-react";
 
 export default function BillingPage() {
-  const [currentPlan, setCurrentPlan] = useState("free");
-  const [credits, setCredits] = useState(50);
-  const supabase = createClient();
-
-  useEffect(() => {
-    loadBilling();
-  }, []);
-
-  async function loadBilling() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data: memberships } = await supabase
-      .from("org_members")
-      .select("organizations(plan, credits_remaining)")
-      .eq("user_id", user.id);
-
-    if (memberships?.length) {
-      const org = (memberships[0] as Record<string, unknown>).organizations as {
-        plan: string;
-        credits_remaining: number;
-      };
-      setCurrentPlan(org.plan);
-      setCredits(org.credits_remaining);
-    }
-  }
+  const [currentPlan, setCurrentPlan] = useState(MOCK_ORG.plan);
+  const [credits, setCredits] = useState(MOCK_ORG.credits_remaining);
 
   async function handleUpgrade(planId: string) {
     // In production, this would create a Stripe Checkout session

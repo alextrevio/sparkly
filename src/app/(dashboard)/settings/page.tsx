@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { MOCK_ORG, MOCK_USER } from "@/lib/auth/mock";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,27 +22,9 @@ export default function SettingsPage() {
   }, []);
 
   async function loadSettings() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data: memberships } = await supabase
-      .from("org_members")
-      .select("org_id, organizations(id, name)")
-      .eq("user_id", user.id);
-
-    const memberRows = memberships as { org_id: string; organizations: { id: string; name: string } | null }[] | null;
-    if (memberRows?.length) {
-      const org = memberRows[0].organizations as { id: string; name: string };
-      setOrgId(org.id);
-      setOrgName(org.name);
-
-      const { data: orgMembers } = await supabase
-        .from("org_members")
-        .select("id, user_id, role")
-        .eq("org_id", org.id);
-
-      if (orgMembers) setMembers(orgMembers as { id: string; user_id: string; role: string }[]);
-    }
+    setOrgId(MOCK_ORG.id);
+    setOrgName(MOCK_ORG.name);
+    setMembers([{ id: "mock-member-001", user_id: MOCK_USER.id, role: "owner" }]);
   }
 
   async function handleSave() {

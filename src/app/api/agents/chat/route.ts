@@ -1,7 +1,7 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { MOCK_ORG } from "@/lib/auth/mock";
 import { getAgentConfig } from "@/lib/agents";
 import { buildBrandContext } from "@/lib/utils/brand-context";
-import { calculateCreditCost, hasEnoughCredits, deductCredits } from "@/lib/utils/credits";
 import type { AgentType, MessageRole, Database } from "@/lib/supabase/types";
 import Anthropic from "@anthropic-ai/sdk";
 
@@ -10,13 +10,6 @@ export const maxDuration = 60;
 
 export async function POST(request: Request) {
   const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return Response.json({ error: "No autenticado" }, { status: 401 });
-  }
 
   const body = await request.json();
   const {
@@ -39,26 +32,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "Agente no válido" }, { status: 400 });
   }
 
-  // Get org membership
-  const { data: memberships } = await supabase
-    .from("org_members")
-    .select("org_id")
-    .eq("user_id", user.id);
-
-  if (!memberships?.length) {
-    return Response.json({ error: "Sin organización" }, { status: 403 });
-  }
-
-  const orgId = memberships[0].org_id;
-
-  // Check credits
-  const enoughCredits = await hasEnoughCredits(orgId, agentType);
-  if (!enoughCredits) {
-    return Response.json(
-      { error: "Sin créditos suficientes. Actualiza tu plan." },
-      { status: 402 }
-    );
-  }
+  const orgId = MOCK_ORG.id;
 
   // Load project and brand context
   const { data: project } = await supabase
@@ -178,8 +152,7 @@ export async function POST(request: Request) {
           tokens_used: tokensInput + tokensOutput,
         });
 
-        // Deduct credits (also logs usage internally)
-        await deductCredits(orgId, agentType, tokensInput, tokensOutput, convId);
+        // Credits deduction bypassed in demo mode
 
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
         controller.close();

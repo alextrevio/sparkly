@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { MOCK_USER, MOCK_ORG } from "@/lib/auth/mock";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,21 +34,10 @@ export default function ProjectsPage() {
   }, []);
 
   async function loadProjects() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data: memberships } = await supabase
-      .from("org_members")
-      .select("org_id")
-      .eq("user_id", user.id);
-
-    const memberRows = memberships as { org_id: string }[] | null;
-    if (!memberRows?.length) return;
-
     const { data } = await supabase
       .from("projects")
       .select("*")
-      .eq("org_id", memberRows[0].org_id)
+      .eq("org_id", MOCK_ORG.id)
       .order("created_at", { ascending: false });
 
     if (data) setProjects(data as Project[]);
@@ -57,19 +47,8 @@ export default function ProjectsPage() {
     e.preventDefault();
     setLoading(true);
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data: memberships } = await supabase
-      .from("org_members")
-      .select("org_id")
-      .eq("user_id", user.id);
-
-    const createMemberRows = memberships as { org_id: string }[] | null;
-    if (!createMemberRows?.length) return;
-
     await supabase.from("projects").insert({
-      org_id: createMemberRows[0].org_id,
+      org_id: MOCK_ORG.id,
       name,
       description,
       industry,

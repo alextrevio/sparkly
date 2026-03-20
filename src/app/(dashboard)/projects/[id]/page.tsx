@@ -1,5 +1,5 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { redirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import type { Database } from "@/lib/supabase/types";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -65,8 +65,6 @@ export default async function ProjectDetailPage({
 }) {
   const { id } = await params;
   const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/auth/login");
 
   type Project = Database["public"]["Tables"]["projects"]["Row"];
   type GeneratedOutput = Database["public"]["Tables"]["generated_outputs"]["Row"];

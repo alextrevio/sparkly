@@ -1,5 +1,4 @@
-import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+import { MOCK_ORG } from "@/lib/auth/mock";
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -52,35 +51,24 @@ const agents = [
 ];
 
 export default async function DashboardPage() {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const org = MOCK_ORG;
 
-  if (!user) redirect("/auth/login");
-
-  const { data: memberships } = await supabase
-    .from("org_members")
-    .select("org_id, role, organizations(id, name, plan, credits_remaining)")
-    .eq("user_id", user.id);
-
-  const org = (memberships?.[0] as Record<string, unknown> | undefined)?.organizations as {
-    id: string;
-    name: string;
-    plan: string;
-    credits_remaining: number;
-  } | null;
-
+  // Projects will be loaded from Supabase if available, otherwise empty
   type Project = { id: string; name: string; description: string | null; industry: string | null };
-  const { data: projectsData } = org
-    ? await supabase
-        .from("projects")
-        .select("id, name, description, industry")
-        .eq("org_id", org.id)
-        .order("created_at", { ascending: false })
-        .limit(5)
-    : { data: [] };
-  const projects = (projectsData ?? []) as Project[];
+  let projects: Project[] = [];
+  try {
+    const { createServerSupabaseClient } = await import("@/lib/supabase/server");
+    const supabase = await createServerSupabaseClient();
+    const { data: projectsData } = await supabase
+      .from("projects")
+      .select("id, name, description, industry")
+      .eq("org_id", org.id)
+      .order("created_at", { ascending: false })
+      .limit(5);
+    projects = (projectsData ?? []) as Project[];
+  } catch {
+    // Supabase not configured, show empty state
+  }
 
   return (
     <div className="space-y-8">
